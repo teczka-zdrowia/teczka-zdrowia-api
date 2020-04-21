@@ -17,7 +17,7 @@ class CreateUsersTable extends Migration
             $table->bigIncrements('id');
             $table->boolean('is_deleted')->default(false);
             $table->boolean('rules_accepted')->default(false);
-            $table->string('avatar');
+            $table->string('avatar')->default('');
             $table->string('password');
             $table->string('pesel', 11);
             $table->string('name', 100);
