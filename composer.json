@@ -15,7 +15,8 @@
         "laravel/tinker": "^1.0",
         "mll-lab/graphql-php-scalars": "^2.1",
         "nuwave/lighthouse": "^4.1",
-        "tenantcloud/laravel-boolean-softdeletes": "^0.1.2"
+        "tenantcloud/laravel-boolean-softdeletes": "^0.1.2",
+        "ext-mbstring": "*"
     },
     "require-dev": {
         "barryvdh/laravel-debugbar": "^3.2",
