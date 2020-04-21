@@ -1,0 +1,5 @@
+type Storage {
+    user: User!
+    kb_used: Int!
+    kb_max: Int!
+}

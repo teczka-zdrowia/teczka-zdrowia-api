@@ -1,0 +1,52 @@
+type Recommendation {
+    id: ID!
+    is_active: Boolean!
+    is_deleted: Boolean!
+    title: String!
+    description: String!
+    start_date: DateTime!
+    days: Int!
+    history: History! @belongsTo
+    patient: User! @belongsTo
+    author: User! @belongsTo
+}
+
+input CreateRecommendationInput {
+    title: String! @rules(apply: ["required", "string", "filled", "max:100"])
+    description: String!
+        @rules(apply: ["required", "string", "filled", "max:200"])
+    start_date: DateTime! @rules(apply: ["required"])
+    days: Int! @rules(apply: ["required"])
+}
+
+input UpdateRecommendationInput {
+    is_active: String
+}
+
+extend type Query {
+    recommendation(id: ID @eq): Recommendation!
+        @find(model: "App\\Recommendation")
+        @can(ability: "view", find: "id")
+        @middleware(checks: ["auth:api"])
+}
+
+extend type Mutation {
+    createRecommendations(
+        data: [CreateRecommendationInput!]!
+        history_id: ID!
+    ): [Recommendation]
+        @can(ability: "create")
+        @inject(context: "user.id", name: "author_id")
+        @middleware(checks: ["auth:api"])
+    updateRecommendation(
+        id: ID @eq
+        data: UpdateRecommendationInput! @spread
+    ): Recommendation!
+        @can(ability: "update", find: "id")
+        @middleware(checks: ["auth:api"])
+        @update
+    deleteRecommendation(id: ID @eq): Recommendation!
+        @can(ability: "delete", find: "id")
+        @middleware(checks: ["auth:api"])
+        @delete
+}

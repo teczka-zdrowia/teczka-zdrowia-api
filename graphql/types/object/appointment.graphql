@@ -1,0 +1,63 @@
+type Appointment {
+    id: ID!
+    is_active: Boolean!
+    is_deleted: Boolean!
+    confirmed: Boolean!
+    note: String!
+    date: DateTime!
+    patient: User! @belongsTo
+    author: User! @belongsTo
+    place: Place! @belongsTo
+}
+
+input CreateAppointmentInput {
+    note: String! @rules(apply: ["required", "string", "filled", "max:50"])
+    date: DateTime! @rules(apply: ["required", "after:now"])
+    patient_id: ID! @rules(apply: ["required", "exists:users,id"])
+    place_id: ID! @rules(apply: ["required", "exists:places,id"])
+}
+
+input UpdateAppointmentInput {
+    is_active: Boolean
+    confirmed: Boolean
+    note: String @rules(apply: ["string", "filled", "max:50"])
+    date: DateTime @rules(apply: ["after:now"])
+}
+
+extend type Query @middleware(checks: ["auth:api"]) {
+    appointment(id: ID @eq): Appointment!
+        @find(model: "App\\Appointment")
+        @can(ability: "view", find: "id")
+    appointmentsByMe(
+        is_deleted: Boolean = 0 @eq
+        is_active: Boolean = 1 @eq
+        date: DateRange @whereBetween
+        note: String @where(operator: "LIKE")
+        orderBy: [OrderByClause!] @orderBy
+    ): [Appointment!]!
+        @paginate(
+            type: "connection"
+            builder: "App\\Appointment@createdByViewer"
+        )
+}
+
+extend type Mutation {
+    createAppointment(data: CreateAppointmentInput! @spread): Appointment
+        @can(ability: "create")
+        @inject(context: "user.id", name: "author_id")
+        @middleware(checks: ["auth:api"])
+    updateAppointment(
+        id: ID!
+        data: UpdateAppointmentInput! @spread
+    ): Appointment
+        @can(ability: "update", find: "id")
+        @middleware(checks: ["auth:api"])
+    updateAppointmentConfirmation(id: ID!, confirmed: Boolean!): Appointment
+        @can(ability: "updateConfirmed", find: "id")
+        @middleware(checks: ["auth:api"])
+        @update
+    deleteAppointment(id: ID!): Appointment
+        @can(ability: "delete", find: "id")
+        @middleware(checks: ["auth:api"])
+        @delete
+}

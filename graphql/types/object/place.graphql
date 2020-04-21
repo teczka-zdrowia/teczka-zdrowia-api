@@ -1,0 +1,63 @@
+type Place {
+    id: ID!
+    is_active: Boolean!
+    is_deleted: Boolean!
+    name: String!
+    city: String!
+    address: String!
+    agreement: String!
+}
+
+type PlaceStatistics {
+    patients_count: Int!
+    appointments_count: Int!
+    most_active_worker: User!
+}
+
+input CreatePlaceInput {
+    name: String! @rules(apply: ["required", "string", "filled", "max:50"])
+    city: String! @rules(apply: ["required", "string", "filled", "max:50"])
+    address: String! @rules(apply: ["required", "string", "filled", "max:100"])
+}
+
+input UpdatePlaceInput {
+    is_active: Boolean = 1
+    name: String @rules(apply: ["string", "max:50"])
+    city: String @rules(apply: ["string", "max:50"])
+    address: String @rules(apply: ["string", "max:100"])
+    agreement: Upload
+}
+
+extend type Place @can(ability: "view") @middleware(checks: ["auth:api"]) {
+    patients: [Role!]! @hasMany
+    employees: [Role!]! @hasMany
+    appointments(
+        is_deleted: Boolean = 0 @eq
+        is_active: Boolean = 1 @eq
+        author_id: ID @eq
+        date: DateRange @whereBetween
+        note: String @where(operator: "LIKE")
+        orderBy: [OrderByClause!] @orderBy
+    ): [Appointment!]! @hasMany(type: "connection")
+}
+
+extend type Query {
+    place(id: ID @eq): Place @find(model: "App\\Place")
+    placeStatistics(id: ID @eq, date: DateRange): PlaceStatistics
+    places(city: String! @where(operator: "LIKE")): [Place!]! @all
+}
+
+extend type Mutation {
+    createPlace(data: CreatePlaceInput! @spread): Place!
+        @can(ability: "create")
+        @middleware(checks: ["auth:api"])
+
+    updatePlace(id: ID! @eq, data: UpdatePlaceInput! @spread): Place!
+        @can(ability: "update", find: "id")
+        @middleware(checks: ["auth:api"])
+
+    deletePlace(id: ID! @eq): Place!
+        @can(ability: "delete", find: "id")
+        @middleware(checks: ["auth:api"])
+        @delete
+}

@@ -1,0 +1,127 @@
+extend type User @middleware(checks: ["auth:api"]) {
+    is_deleted: Boolean!
+    phone: String!
+    avatar: String!
+    specialization: String!
+    address: String!
+    rules_accepted: Boolean!
+    paid_until: DateTime
+    is_payment_valid: Boolean! @field(resolver: "App\\User@isPaymentValid")
+    birthdate: Date! @field(resolver: "App\\User@birthdate")
+    recommendations(
+        is_deleted: Boolean = 0 @eq
+        is_active: Boolean = 1 @eq
+        description: String @where(operator: "LIKE")
+        orderBy: [OrderByClause!] @orderBy
+    ): [Recommendation!]! @hasMany(type: "paginator")
+    histories(
+        is_deleted: Boolean = 0 @eq
+        is_active: Boolean = 1 @eq
+        treatments: String @where(operator: "LIKE")
+        note: String @where(operator: "LIKE")
+        orderBy: [OrderByClause!] @orderBy
+    ): [History!]! @hasMany(type: "connection")
+    appointments(
+        is_deleted: Boolean = 0 @eq
+        is_active: Boolean = 1 @eq
+        date: DateRange @whereBetween
+        note: String @where(operator: "LIKE")
+        orderBy: [OrderByClause!] @orderBy
+    ): [Appointment!]! @hasMany(type: "connection")
+    roles: [Role!]! @hasMany
+    storage: Storage! @hasOne
+}
+
+input CreateUserInput {
+    name: String! @rules(apply: ["required", "string", "min:4", "max:100"])
+    email: Email!
+        @rules(apply: ["required", "email", "unique:users,email", "max:100"])
+    password: String! @rules(apply: ["required", "string", "min:8", "max:255"])
+    pesel: String!
+        @rules(
+            apply: [
+                "required"
+                "string"
+                "filled"
+                "min:11"
+                "max:11"
+                "unique:users,pesel"
+                "App\\Rules\\Pesel"
+            ]
+        )
+    phone: String! @rules(apply: ["required", "string", "min:4", "max:50"])
+    rules_accepted: Boolean! @rules(apply: ["required", "accepted"])
+    specialization: String = ""
+}
+
+input InitializeUserInput {
+    name: String! @rules(apply: ["required", "string", "min:4", "max:100"])
+    email: Email!
+        @rules(apply: ["required", "email", "unique:users,email", "max:100"])
+    pesel: String!
+        @rules(
+            apply: [
+                "required"
+                "string"
+                "filled"
+                "min:11"
+                "max:11"
+                "unique:users,pesel"
+                "App\\Rules\\Pesel"
+            ]
+        )
+    phone: String! @rules(apply: ["required", "string", "min:4", "max:50"])
+    address: String! @rules(apply: ["required", "string", "max:100"])
+    specialization: String = ""
+}
+
+input UpdateUserInput {
+    name: String
+    email: Email
+    pesel: String
+    phone: String
+    address: String
+    specialization: String
+    avatar: Upload
+}
+
+input DeleteUserInput {
+    password: String! @rules(apply: ["required", "string", "min:8", "max:255"])
+    delete_all_files: Boolean!
+}
+
+input NewPasswordInput {
+    password: String! @rules(apply: ["required", "string", "min:8", "max:255"])
+    new_password: String!
+        @rules(apply: ["required", "string", "min:8", "max:255", "confirmed"])
+    new_password_confirmation: String!
+}
+
+type NewPasswordResponse {
+    status: String!
+    message: String
+}
+
+type NewPlanResponse {
+    status: String!
+    message: String
+}
+
+extend type Query @middleware(checks: ["auth:api"]) {
+    user(id: ID @eq, pesel: String @eq): User @find(model: "App\\User")
+    mePesel(password: String!): String!
+}
+
+extend type Mutation {
+    createUser(data: CreateUserInput! @spread): User!
+}
+
+extend type Mutation @middleware(checks: ["auth:api"]) {
+    initializeUser(data: InitializeUserInput! @spread): User!
+    updateMe(data: UpdateUserInput! @spread): User!
+        @updateUserValidation
+        @inject(context: "user.id", name: "id")
+    updatePassword(data: NewPasswordInput!): NewPasswordResponse!
+    deleteMe(data: DeleteUserInput! @spread): User!
+    getFreePlan: NewPlanResponse!
+}

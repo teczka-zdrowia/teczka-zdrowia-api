@@ -1,0 +1,52 @@
+type History {
+    id: ID!
+    is_active: Boolean!
+    is_deleted: Boolean!
+    treatments: String!
+    note: String!
+    date: DateTime!
+    agreement: String!
+    patient: User! @belongsTo
+    author: User! @belongsTo
+    place: Place! @belongsTo
+    recommendations: [Recommendation!]! @hasMany
+    attachments: [Attachment!]! @hasMany
+}
+
+input CreateHistoryInput {
+    treatments: String! @rules(apply: ["required", "string", "max:300"])
+    note: String! @rules(apply: ["required", "string", "max:500"])
+    date: DateTime! @rules(apply: ["required"])
+    agreement: Upload
+    patient_id: ID!
+    place_id: ID!
+}
+
+input UpdateHistoryInput {
+    is_active: Boolean!
+    treatments: String! @rules(apply: ["required", "string", "max:300"])
+    note: String! @rules(apply: ["required", "string", "max:500"])
+    date: DateTime! @rules(apply: ["required"])
+    patient_id: ID!
+    place_id: ID!
+}
+
+extend type Query {
+    history(id: ID @eq): History!
+        @find(model: "App\\History")
+        @can(ability: "view", find: "id")
+        @middleware(checks: ["auth:api"])
+}
+
+extend type Mutation {
+    createHistory(data: CreateHistoryInput! @spread): History
+        @can(ability: "create")
+        @inject(context: "user.id", name: "author_id")
+        @middleware(checks: ["auth:api"])
+    updateHistory(id: ID! @eq, data: UpdateHistoryInput!): History!
+        @can(ability: "update", find: "id")
+        @middleware(checks: ["auth:api"])
+    deleteHistory(id: ID! @eq): History!
+        @can(ability: "delete", find: "id")
+        @middleware(checks: ["auth:api"])
+}

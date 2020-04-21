@@ -1,0 +1,48 @@
+enum AttachmentType {
+    IMAGE @enum(value: 0)
+    VIDEO @enum(value: 1)
+    DOCUMENT @enum(value: 2)
+    COMPRESSED @enum(value: 3)
+    OTHER @enum(value: 4)
+}
+
+type Attachment {
+    id: ID!
+    is_active: Boolean!
+    is_deleted: Boolean!
+    title: String!
+    file_type: AttachmentType!
+    file_name: String!
+    history: History! @belongsTo
+    patient: User! @belongsTo
+    author: User! @belongsTo
+}
+
+input CreateAttachmentInput {
+    title: String! @rules(apply: ["required", "string", "filled", "max:50"])
+    file: Upload! @rules(apply: ["required", "file"])
+}
+
+input UpdateAttachmentInput {
+    is_active: Boolean!
+}
+
+extend type Mutation {
+    createAttachments(
+        data: [CreateAttachmentInput!]!
+        history_id: ID!
+    ): [Attachment]
+        @can(ability: "create")
+        @inject(context: "user.id", name: "author_id")
+        @middleware(checks: ["auth:api"])
+    updateAttachment(
+        id: ID @eq
+        data: UpdateAttachmentInput! @spread
+    ): Attachment!
+        @can(ability: "update", find: "id")
+        @middleware(checks: ["auth:api"])
+        @update
+    deleteAttachment(id: ID! @eq): Attachment!
+        @can(ability: "delete", find: "id")
+        @middleware(checks: ["auth:api"])
+}

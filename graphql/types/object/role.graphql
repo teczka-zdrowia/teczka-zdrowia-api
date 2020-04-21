@@ -1,0 +1,45 @@
+enum permissionType {
+    ADMIN @enum(value: 0)
+    EMPLOYEE @enum(value: 1)
+    PATIENT @enum(value: 2)
+}
+
+type Role {
+    id: ID!
+    is_active: Boolean!
+    is_deleted: Boolean!
+    permission_type: permissionType!
+    user: User! @belongsTo
+    place: Place! @belongsTo
+}
+
+input CreateRoleInput {
+    permission_type: permissionType!
+    user_id: ID!
+    place_id: ID!
+}
+
+input UpdateRoleInput {
+    permission_type: permissionType
+    is_active: Boolean
+}
+
+extend type Query {
+    myPatients: [Role!]! @middleware(checks: ["auth:api"])
+}
+
+extend type Mutation {
+    createRole(data: CreateRoleInput! @spread): Role
+        @can(ability: "create")
+        @middleware(checks: ["auth:api"])
+
+    updateRole(id: ID! @eq, data: UpdateRoleInput! @spread): Role
+        @can(ability: "update", find: "id")
+        @middleware(checks: ["auth:api"])
+        @update
+
+    deleteRole(id: ID! @eq): Role!
+        @can(ability: "delete", find: "id")
+        @middleware(checks: ["auth:api"])
+        @delete
+}
