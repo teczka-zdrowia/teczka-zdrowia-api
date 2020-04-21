@@ -10,7 +10,7 @@ Software: Teczka Zdrowia API
 
 License: Apache 2.0
 
-Licensor: Adrian Orłów
+Licensor: Adrian Orłów and Michał Bernyś
 
 ---
 ```
